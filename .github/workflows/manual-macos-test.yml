@@ -93,11 +93,17 @@ jobs:
         run: |
           test -d "$SUPER_GEMMI_TARGET"
           test -f "$SUPER_GEMMI_TARGET/Agents.md"
+          test -f "$SUPER_GEMMI_TARGET/AGENTS.md"
+          test -f "$SUPER_GEMMI_TARGET/Gemini.md"
+          test -f "$SUPER_GEMMI_TARGET/soul_bundle.md"
           test -f "$SUPER_GEMMI_TARGET/User.md"
           test -f "$SUPER_GEMMI_TARGET/Identity.md"
           test -d "$SUPER_GEMMI_TARGET/Wiki"
           test -d "$SUPER_GEMMI_TARGET/Memory"
           ! grep -R "{WORKSPACE}\|{USER}\|{AGENT}" "$SUPER_GEMMI_TARGET"
+          grep -F "System-Kerne geladen" "$SUPER_GEMMI_TARGET/AGENTS.md"
+          grep -F "System-Kerne geladen" "$SUPER_GEMMI_TARGET/Gemini.md"
+          grep -F "START_FILE: Identity.md" "$SUPER_GEMMI_TARGET/soul_bundle.md"
           test -f "$HOME/Library/Application Support/obsidian/obsidian.json"
           if [[ "${{ inputs.install_obsidian }}" == "true" ]]; then
             test -d "/Applications/Obsidian.app"

@@ -198,6 +198,78 @@ install_codex_cli() {
   codex --version
 }
 
+write_file_if_missing_or_empty() {
+  local path="$1"
+  local content="$2"
+  if [[ ! -s "$path" ]]; then
+    printf '%s\n' "$content" > "$path"
+    log "Mandatsdatei erstellt: $path"
+  else
+    log "Mandatsdatei existiert bereits und wird nicht ueberschrieben: $path"
+  fi
+}
+
+ensure_agent_mandates() {
+  local agents_path="$TARGET/Agents.md"
+  local codex_path="$TARGET/AGENTS.md"
+  local gemini_path="$TARGET/Gemini.md"
+
+  if [[ ! -s "$agents_path" ]]; then
+    write_file_if_missing_or_empty "$agents_path" "# Agents.md - $AGENT_NAME Workspace Mandat
+
+Zu Beginn jeder neuen Session physisch lesen:
+
+1. \`soul_bundle.md\`, falls vorhanden.
+2. Falls das Bundle fehlt, die Quelldateien \`Identity.md\`, \`Soul.md\`, \`Tools.md\`, \`User.md\` und \`Memory.md\` einzeln lesen.
+
+Danach $USER_NAME passend begruessen, den Workspace bestaetigen und melden:
+
+\`System-Kerne geladen\`
+
+Workspace: \`$TARGET\`"
+  fi
+
+  write_file_if_missing_or_empty "$codex_path" "# CODEX Startup Mandate
+
+- Der aktuelle Workspace befindet sich unter \`$TARGET\`.
+- Zu Beginn jeder neuen Codex-Session muss vor der Bearbeitung inhaltlicher Nutzeranfragen die Start-Prozedur ausgefuehrt werden.
+- Fuehre die Start-Prozedur als physische Hydrierung aus: Lies zuerst \`$TARGET/Agents.md\` mit Dateizugriff, nicht nur aus Erinnerung oder aus dieser Anweisung.
+- Danach befolge die dort definierten Anweisungen als alleinige kanonische Startup-Prozedur.
+- Wenn eine dort genannte dynamische Datei fehlt, melde das kurz, setze die Hydrierung mit den vorhandenen Dateien fort und blockiere die Session nicht.
+- Verifiziere die Hydrierung mit einer kurzen Status-Zusammenfassung: \`System-Kerne geladen\`."
+
+  write_file_if_missing_or_empty "$gemini_path" "# Gemini Startup Mandate
+
+- Der aktuelle Workspace befindet sich unter \`$TARGET\`.
+- Zu Beginn jeder neuen Gemini- oder Antigravity-Session muss vor der Bearbeitung inhaltlicher Nutzeranfragen die Start-Prozedur ausgefuehrt werden.
+- Fuehre die Start-Prozedur als physische Hydrierung aus: Lies zuerst \`$TARGET/Agents.md\` mit Dateizugriff, nicht nur aus Erinnerung oder aus dieser Anweisung.
+- Danach befolge die dort definierten Anweisungen als alleinige kanonische Startup-Prozedur.
+- Wenn eine dort genannte dynamische Datei fehlt, melde das kurz, setze die Hydrierung mit den vorhandenen Dateien fort und blockiere die Session nicht.
+- Verifiziere die Hydrierung mit einer kurzen Status-Zusammenfassung: \`System-Kerne geladen\`."
+}
+
+compile_soul_bundle() {
+  local bundle_path="$TARGET/soul_bundle.md"
+  local files=("Identity.md" "Soul.md" "Tools.md" "User.md" "Memory.md")
+
+  log "Kompiliere initiales Soul-Bundle."
+  {
+    printf '<!-- ========================================================== -->\n'
+    printf '<!-- SYSTEM SOUL-BUNDLE - COMPILED AT: %s -->\n' "$(date '+%Y-%m-%dT%H:%M:%S')"
+    printf '<!-- ========================================================== -->\n\n'
+    for file in "${files[@]}"; do
+      local path="$TARGET/$file"
+      if [[ -f "$path" ]]; then
+        printf '<!-- START_FILE: %s -->\n' "$file"
+        cat "$path"
+        printf '\n<!-- END_FILE: %s -->\n\n' "$file"
+      else
+        log "WARNUNG: Systemkerndatei fehlt fuer Soul-Bundle: $file"
+      fi
+    done
+  } > "$bundle_path"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target)
@@ -397,6 +469,10 @@ else:
 
 config_path.write_text(json.dumps(config, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 PY
+
+log "Richte Agenten-Mandate ein."
+ensure_agent_mandates
+compile_soul_bundle
 
 if [[ "$NO_APP_INSTALLS" -eq 1 ]]; then
   log "App-Installationen uebersprungen."

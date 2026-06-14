@@ -6,6 +6,8 @@ Ziel der ersten Stufe:
 
 - Workspace-Vorlage in einen Zielordner kopieren
 - Platzhalter `{WORKSPACE}`, `{USER}` und `{AGENT}` ersetzen
+- `Agents.md`, `AGENTS.md` und `Gemini.md` mit Hydrierungsmandaten erzeugen
+- initiales `soul_bundle.md` kompilieren
 - Wiki- und Memory-Basisstruktur pruefen
 - Obsidian-Vault-Konfiguration fuer macOS vorbereiten
 - alles non-interaktiv in GitHub Actions auf macOS testen
