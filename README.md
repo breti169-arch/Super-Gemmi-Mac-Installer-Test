@@ -6,7 +6,7 @@ Ziel der ersten Stufe:
 
 - Workspace-Vorlage in einen Zielordner kopieren
 - Platzhalter `{WORKSPACE}`, `{USER}` und `{AGENT}` ersetzen
-- `Agents.md`, `AGENTS.md` und `Gemini.md` mit Hydrierungsmandaten erzeugen
+- `AGENTS.md` und `Gemini.md` mit Hydrierungsmandaten erzeugen
 - initiales `soul_bundle.md` kompilieren
 - Wiki- und Memory-Basisstruktur pruefen
 - Obsidian-Vault-Konfiguration fuer macOS vorbereiten
@@ -73,17 +73,17 @@ Verfuegbare Installationsoptionen:
 
 Ohne `--template-root` nutzt der Installer:
 
-1. das uebergeordnete Super-Gemmi-Projekt, wenn dort `Agents.md` existiert
+1. das uebergeordnete Super-Gemmi-Projekt, wenn dort `AGENTS.md` existiert
 2. sonst das lokale `template/`-Verzeichnis
 
 Fuer ein oeffentliches Test-Repo ist `template/` bewusst minimal gehalten.
 
-Hinweis fuer Windows-Arbeitsplaetze: `Agents.md` und `AGENTS.md` unterscheiden
-sich nur in der Gross-/Kleinschreibung. Auf dem ueblichen Windows-Dateisystem
-koennen diese Dateien nicht zuverlaessig nebeneinander gepflegt oder aus einem
-Artefakt entpackt angezeigt werden. Deshalb enthaelt das Template nur
-`Agents.md`; der Installer erzeugt `AGENTS.md` erst im macOS-Ziel-Workspace.
-Der GitHub-Action-Test prueft beide Dateien direkt auf macOS und legt zusaetzlich
+Hinweis fuer Windows- und Standard-macOS-Arbeitsplaetze: `Agents.md` und
+`AGENTS.md` unterscheiden sich nur in der Gross-/Kleinschreibung. Auf
+case-insensitive Dateisystemen koennen diese Dateien nicht zuverlaessig
+nebeneinander existieren. Deshalb ist `AGENTS.md` der kanonische Codex-Startup
+Entry-Point; `Gemini.md` verweist auf diese Start-Prozedur. Der
+GitHub-Action-Test prueft die Mandate direkt auf macOS und legt zusaetzlich
 `manual-test-result/installed-workspace-files.txt` sowie
 `manual-test-result/mandate-checksums.txt` im Artefakt ab.
 

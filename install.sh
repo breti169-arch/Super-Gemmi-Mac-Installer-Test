@@ -210,12 +210,22 @@ write_file_if_missing_or_empty() {
 }
 
 ensure_agent_mandates() {
-  local agents_path="$TARGET/Agents.md"
   local codex_path="$TARGET/AGENTS.md"
   local gemini_path="$TARGET/Gemini.md"
 
-  if [[ ! -s "$agents_path" ]]; then
-    write_file_if_missing_or_empty "$agents_path" "# Agents.md - $AGENT_NAME Workspace Mandat
+  if python3 - "$TARGET" <<'PY'
+import sys
+from pathlib import Path
+names = {item.name for item in Path(sys.argv[1]).iterdir()}
+raise SystemExit(0 if "Agents.md" in names and "AGENTS.md" not in names else 1)
+PY
+  then
+    mv "$TARGET/Agents.md" "$TARGET/.AGENTS.md.tmp"
+    mv "$TARGET/.AGENTS.md.tmp" "$codex_path"
+    log "Mandatsdatei auf kanonischen Codex-Namen normalisiert: $codex_path"
+  fi
+
+  write_file_if_missing_or_empty "$codex_path" "# AGENTS.md - $AGENT_NAME Codex Startup Mandate
 
 Zu Beginn jeder neuen Session physisch lesen:
 
@@ -227,23 +237,13 @@ Danach $USER_NAME passend begruessen, den Workspace bestaetigen und melden:
 \`System-Kerne geladen\`
 
 Workspace: \`$TARGET\`"
-  fi
-
-  write_file_if_missing_or_empty "$codex_path" "# CODEX Startup Mandate
-
-- Der aktuelle Workspace befindet sich unter \`$TARGET\`.
-- Zu Beginn jeder neuen Codex-Session muss vor der Bearbeitung inhaltlicher Nutzeranfragen die Start-Prozedur ausgefuehrt werden.
-- Fuehre die Start-Prozedur als physische Hydrierung aus: Lies zuerst \`$TARGET/Agents.md\` mit Dateizugriff, nicht nur aus Erinnerung oder aus dieser Anweisung.
-- Danach befolge die dort definierten Anweisungen als alleinige kanonische Startup-Prozedur.
-- Wenn eine dort genannte dynamische Datei fehlt, melde das kurz, setze die Hydrierung mit den vorhandenen Dateien fort und blockiere die Session nicht.
-- Verifiziere die Hydrierung mit einer kurzen Status-Zusammenfassung: \`System-Kerne geladen\`."
 
   write_file_if_missing_or_empty "$gemini_path" "# Gemini Startup Mandate
 
 - Der aktuelle Workspace befindet sich unter \`$TARGET\`.
 - Zu Beginn jeder neuen Gemini- oder Antigravity-Session muss vor der Bearbeitung inhaltlicher Nutzeranfragen die Start-Prozedur ausgefuehrt werden.
-- Fuehre die Start-Prozedur als physische Hydrierung aus: Lies zuerst \`$TARGET/Agents.md\` mit Dateizugriff, nicht nur aus Erinnerung oder aus dieser Anweisung.
-- Danach befolge die dort definierten Anweisungen als alleinige kanonische Startup-Prozedur.
+- Fuehre die Start-Prozedur als physische Hydrierung aus: Lies zuerst \`$TARGET/AGENTS.md\` mit Dateizugriff, nicht nur aus Erinnerung oder aus dieser Anweisung.
+- Danach befolge die dort definierte Start-Prozedur als alleinige kanonische Startup-Prozedur.
 - Wenn eine dort genannte dynamische Datei fehlt, melde das kurz, setze die Hydrierung mit den vorhandenen Dateien fort und blockiere die Session nicht.
 - Verifiziere die Hydrierung mit einer kurzen Status-Zusammenfassung: \`System-Kerne geladen\`."
 }
@@ -336,7 +336,7 @@ done
 [[ -n "$AGENT_NAME" ]] || AGENT_NAME="Gemmi"
 
 if [[ -z "$TEMPLATE_ROOT" ]]; then
-  if [[ -f "$PROJECT_ROOT/Agents.md" ]]; then
+  if [[ -f "$PROJECT_ROOT/AGENTS.md" ]]; then
     TEMPLATE_ROOT="$PROJECT_ROOT"
   else
     TEMPLATE_ROOT="$SCRIPT_DIR/template"

@@ -16,7 +16,6 @@ trap cleanup EXIT
   --no-app-installs
 
 test -d "$TARGET"
-test -f "$TARGET/Agents.md"
 test -f "$TARGET/AGENTS.md"
 test -f "$TARGET/Gemini.md"
 test -f "$TARGET/soul_bundle.md"
@@ -33,6 +32,7 @@ fi
 test -f "$HOME/Library/Application Support/obsidian/obsidian.json"
 grep -F "System-Kerne geladen" "$TARGET/AGENTS.md" >/dev/null
 grep -F "System-Kerne geladen" "$TARGET/Gemini.md" >/dev/null
+grep -F "$TARGET/AGENTS.md" "$TARGET/Gemini.md" >/dev/null
 grep -F "START_FILE: Identity.md" "$TARGET/soul_bundle.md" >/dev/null
 
 echo "macOS smoke test ok: $TARGET"

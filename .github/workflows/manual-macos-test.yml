@@ -93,7 +93,6 @@ jobs:
         run: |
           test -d "$SUPER_GEMMI_TARGET"
           find "$SUPER_GEMMI_TARGET" -maxdepth 2 -print | sort
-          test -f "$SUPER_GEMMI_TARGET/Agents.md"
           test -f "$SUPER_GEMMI_TARGET/AGENTS.md"
           test -f "$SUPER_GEMMI_TARGET/Gemini.md"
           test -f "$SUPER_GEMMI_TARGET/soul_bundle.md"
@@ -104,6 +103,7 @@ jobs:
           ! grep -R "{WORKSPACE}\|{USER}\|{AGENT}" "$SUPER_GEMMI_TARGET"
           grep -F "System-Kerne geladen" "$SUPER_GEMMI_TARGET/AGENTS.md"
           grep -F "System-Kerne geladen" "$SUPER_GEMMI_TARGET/Gemini.md"
+          grep -F "$SUPER_GEMMI_TARGET/AGENTS.md" "$SUPER_GEMMI_TARGET/Gemini.md"
           grep -F "START_FILE: Identity.md" "$SUPER_GEMMI_TARGET/soul_bundle.md"
           test -f "$HOME/Library/Application Support/obsidian/obsidian.json"
           if [[ "${{ inputs.install_obsidian }}" == "true" ]]; then
@@ -128,7 +128,7 @@ jobs:
         run: |
           mkdir -p manual-test-result
           find "$SUPER_GEMMI_TARGET" -maxdepth 3 -print | sort > manual-test-result/installed-workspace-files.txt
-          shasum -a 256 "$SUPER_GEMMI_TARGET/Agents.md" "$SUPER_GEMMI_TARGET/AGENTS.md" "$SUPER_GEMMI_TARGET/Gemini.md" "$SUPER_GEMMI_TARGET/soul_bundle.md" > manual-test-result/mandate-checksums.txt
+          shasum -a 256 "$SUPER_GEMMI_TARGET/AGENTS.md" "$SUPER_GEMMI_TARGET/Gemini.md" "$SUPER_GEMMI_TARGET/soul_bundle.md" > manual-test-result/mandate-checksums.txt
           cp -R "$SUPER_GEMMI_TARGET" manual-test-result/workspace
           cp "$HOME/Library/Application Support/obsidian/obsidian.json" manual-test-result/obsidian.json
 
