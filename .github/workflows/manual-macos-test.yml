@@ -116,8 +116,26 @@ jobs:
           if [[ "${{ inputs.install_codex_app }}" == "true" ]]; then
             test -d "/Applications/Codex.app"
           fi
+          if [[ "${{ inputs.install_codex_cli }}${{ inputs.install_codex_app }}" != "falsefalse" ]]; then
+            test -f "$HOME/.codex/AGENTS.md"
+            test -f "$HOME/.codex/config.toml"
+            test -f "$HOME/.codex/.codex-global-state.json"
+            grep -F "$SUPER_GEMMI_TARGET/AGENTS.md" "$HOME/.codex/AGENTS.md"
+            grep -F "approval_policy = \"never\"" "$HOME/.codex/config.toml"
+            grep -F "trust_level = \"trusted\"" "$HOME/.codex/config.toml"
+            grep -F "$SUPER_GEMMI_TARGET" "$HOME/.codex/.codex-global-state.json"
+          fi
           if [[ "${{ inputs.install_antigravity }}" == "true" ]]; then
             test -d "/Applications/Antigravity.app"
+            test -f "$HOME/.gemini/GEMINI.md"
+            test -f "$HOME/.gemini/config/config.json"
+            test -d "$HOME/.gemini/config/projects"
+            test -f "$HOME/Library/Application Support/Antigravity/app_storage.json"
+            test -f "$HOME/Library/Application Support/Antigravity/User/settings.json"
+            grep -F "$SUPER_GEMMI_TARGET/AGENTS.md" "$HOME/.gemini/GEMINI.md"
+            grep -F "$SUPER_GEMMI_TARGET" "$HOME/.gemini/config/projects/"*.json
+            grep -F "activeProjectId" "$HOME/.gemini/config/config.json"
+            grep -F "window.zoomLevel" "$HOME/Library/Application Support/Antigravity/User/settings.json"
           fi
 
       - name: Build zip package
@@ -129,6 +147,22 @@ jobs:
           mkdir -p manual-test-result
           find "$SUPER_GEMMI_TARGET" -maxdepth 3 -print | sort > manual-test-result/installed-workspace-files.txt
           shasum -a 256 "$SUPER_GEMMI_TARGET/AGENTS.md" "$SUPER_GEMMI_TARGET/Gemini.md" "$SUPER_GEMMI_TARGET/soul_bundle.md" > manual-test-result/mandate-checksums.txt
+          if [[ -d "$HOME/.codex" ]]; then
+            mkdir -p manual-test-result/codex
+            cp "$HOME/.codex/AGENTS.md" manual-test-result/codex/AGENTS.md 2>/dev/null || true
+            cp "$HOME/.codex/config.toml" manual-test-result/codex/config.toml 2>/dev/null || true
+            cp "$HOME/.codex/.codex-global-state.json" manual-test-result/codex/codex-global-state.json 2>/dev/null || true
+          fi
+          if [[ -d "$HOME/.gemini" ]]; then
+            mkdir -p manual-test-result/gemini
+            cp -R "$HOME/.gemini/config" manual-test-result/gemini/config 2>/dev/null || true
+            cp "$HOME/.gemini/GEMINI.md" manual-test-result/gemini/GEMINI.md 2>/dev/null || true
+          fi
+          if [[ -d "$HOME/Library/Application Support/Antigravity" ]]; then
+            mkdir -p manual-test-result/antigravity
+            cp "$HOME/Library/Application Support/Antigravity/app_storage.json" manual-test-result/antigravity/app_storage.json 2>/dev/null || true
+            cp "$HOME/Library/Application Support/Antigravity/User/settings.json" manual-test-result/antigravity/settings.json 2>/dev/null || true
+          fi
           cp -R "$SUPER_GEMMI_TARGET" manual-test-result/workspace
           cp "$HOME/Library/Application Support/obsidian/obsidian.json" manual-test-result/obsidian.json
 

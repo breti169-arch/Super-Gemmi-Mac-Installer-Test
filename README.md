@@ -10,6 +10,9 @@ Ziel der ersten Stufe:
 - initiales `soul_bundle.md` kompilieren
 - Wiki- und Memory-Basisstruktur pruefen
 - Obsidian-Vault-Konfiguration fuer macOS vorbereiten
+- globale Codex-Konfiguration unter `~/.codex` vorbereiten, wenn Codex installiert wird
+- globale Gemini-/Antigravity-Konfiguration unter `~/.gemini` und
+  `~/Library/Application Support/Antigravity` vorbereiten, wenn Antigravity installiert wird
 - alles non-interaktiv in GitHub Actions auf macOS testen
 
 ## Lokaler Smoke-Test
@@ -73,7 +76,7 @@ Verfuegbare Installationsoptionen:
 
 Ohne `--template-root` nutzt der Installer:
 
-1. das uebergeordnete Super-Gemmi-Projekt, wenn dort `AGENTS.md` existiert
+1. das uebergeordnete Super-Gemmi-Projekt, wenn dort `AGENTS.md` oder `Agents.md` existiert
 2. sonst das lokale `template/`-Verzeichnis
 
 Fuer ein oeffentliches Test-Repo ist `template/` bewusst minimal gehalten.
@@ -86,6 +89,17 @@ Entry-Point; `Gemini.md` verweist auf diese Start-Prozedur. Der
 GitHub-Action-Test prueft die Mandate direkt auf macOS und legt zusaetzlich
 `manual-test-result/installed-workspace-files.txt` sowie
 `manual-test-result/mandate-checksums.txt` im Artefakt ab.
+
+Bei aktivierten App-Optionen werden ausserdem die globalen App-Konfigurationen
+idempotent eingerichtet und als Testartefakte gesammelt:
+
+- Codex: `~/.codex/AGENTS.md`, `~/.codex/config.toml`,
+  `~/.codex/.codex-global-state.json`
+- Gemini/Antigravity: `~/.gemini/GEMINI.md`,
+  `~/.gemini/config/config.json`, `~/.gemini/config/projects/*.json`
+- Antigravity-AppStorage:
+  `~/Library/Application Support/Antigravity/app_storage.json` und
+  `~/Library/Application Support/Antigravity/User/settings.json`
 
 ## GitHub Actions
 

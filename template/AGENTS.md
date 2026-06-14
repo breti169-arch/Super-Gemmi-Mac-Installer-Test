@@ -1,3 +1,12 @@
+---
+soul_files:
+  - Identity.md
+  - Soul.md
+  - Tools.md
+  - User.md
+  - Memory.md
+---
+
 # AGENTS.md - {AGENT} Codex Startup Mandate
 
 Zu Beginn jeder neuen Session physisch lesen:

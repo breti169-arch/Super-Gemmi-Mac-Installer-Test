@@ -250,24 +250,295 @@ Workspace: \`$TARGET\`"
 
 compile_soul_bundle() {
   local bundle_path="$TARGET/soul_bundle.md"
-  local files=("Identity.md" "Soul.md" "Tools.md" "User.md" "Memory.md")
 
   log "Kompiliere initiales Soul-Bundle."
-  {
-    printf '<!-- ========================================================== -->\n'
-    printf '<!-- SYSTEM SOUL-BUNDLE - COMPILED AT: %s -->\n' "$(date '+%Y-%m-%dT%H:%M:%S')"
-    printf '<!-- ========================================================== -->\n\n'
-    for file in "${files[@]}"; do
-      local path="$TARGET/$file"
-      if [[ -f "$path" ]]; then
-        printf '<!-- START_FILE: %s -->\n' "$file"
-        cat "$path"
-        printf '\n<!-- END_FILE: %s -->\n\n' "$file"
-      else
-        log "WARNUNG: Systemkerndatei fehlt fuer Soul-Bundle: $file"
-      fi
-    done
-  } > "$bundle_path"
+  export TARGET BUNDLE_PATH="$bundle_path"
+  python3 <<'PY'
+import os
+import re
+from datetime import datetime
+from pathlib import Path
+
+target = Path(os.environ["TARGET"])
+bundle_path = Path(os.environ["BUNDLE_PATH"])
+agents_path = target / "AGENTS.md"
+files = []
+
+if agents_path.exists():
+    content = agents_path.read_text(encoding="utf-8")
+    match = re.search(r"(?m)^---\s*\n(.*?)\n---\s*$", content, re.S)
+    if match:
+        in_list = False
+        for raw_line in match.group(1).splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("soul_files:"):
+                in_list = True
+                continue
+            if in_list and line.startswith("-"):
+                files.append(line[1:].strip().strip("'\""))
+            elif in_list and ":" in line:
+                in_list = False
+
+if not files:
+    files = ["Identity.md", "Soul.md", "Tools.md", "User.md", "Memory.md"]
+
+lines = [
+    "<!-- ========================================================== -->",
+    f"<!-- SYSTEM SOUL-BUNDLE - COMPILED AT: {datetime.now().strftime('%Y-%m-%dT%H:%M:%S')} -->",
+    "<!-- ========================================================== -->",
+    "",
+]
+success = 0
+for file_name in files:
+    path = target / file_name
+    if not path.exists():
+        lowered = file_name.lower()
+        path = next((item for item in target.iterdir() if item.name.lower() == lowered), path)
+    if path.exists():
+        actual_name = path.name
+        lines.append(f"<!-- START_FILE: {actual_name} -->")
+        lines.append(path.read_text(encoding="utf-8").rstrip())
+        lines.append(f"<!-- END_FILE: {actual_name} -->")
+        lines.append("")
+        success += 1
+    else:
+        print(f"[Super-Gemmi macOS Installer] WARNUNG: Systemkerndatei fehlt fuer Soul-Bundle: {file_name}")
+
+bundle_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+print(f"[Super-Gemmi macOS Installer] Initiales Soul-Bundle erfolgreich generiert ({success}/{len(files)} Dateien).")
+PY
+}
+
+configure_agent_apps() {
+  local configure_codex="$1"
+  local configure_antigravity="$2"
+
+  export TARGET CONFIGURE_CODEX="$configure_codex" CONFIGURE_ANTIGRAVITY="$configure_antigravity"
+  python3 <<'PY'
+import json
+import os
+import shutil
+import uuid
+from pathlib import Path
+from urllib.parse import quote
+
+home = Path.home()
+target = Path(os.environ["TARGET"]).expanduser().resolve()
+configure_codex = os.environ["CONFIGURE_CODEX"] == "1"
+configure_antigravity = os.environ["CONFIGURE_ANTIGRAVITY"] == "1"
+
+def log(message):
+    print(f"[Super-Gemmi macOS Installer] {message}")
+
+def read_json(path):
+    if path.exists() and path.read_text(encoding="utf-8").strip():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            backup = path.with_suffix(path.suffix + ".bak-super-gemmi")
+            try:
+                shutil.copy2(path, backup)
+            except Exception:
+                pass
+    return {}
+
+def write_json(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+def merge_json(target_obj, source_obj):
+    modified = False
+    for key, value in source_obj.items():
+        if isinstance(value, dict):
+            existing = target_obj.get(key)
+            if not isinstance(existing, dict):
+                target_obj[key] = {}
+                existing = target_obj[key]
+                modified = True
+            if merge_json(existing, value):
+                modified = True
+        elif isinstance(value, list):
+            existing = target_obj.get(key)
+            if not isinstance(existing, list):
+                target_obj[key] = []
+                existing = target_obj[key]
+                modified = True
+            for item in value:
+                if item not in existing:
+                    existing.append(item)
+                    modified = True
+        else:
+            if target_obj.get(key) != value:
+                target_obj[key] = value
+                modified = True
+    return modified
+
+def move_to_front(values, value):
+    return [value] + [item for item in values if item != value]
+
+def workspace_file_uri(path):
+    return path.as_uri()
+
+def configure_codex_files():
+    codex_dir = home / ".codex"
+    codex_dir.mkdir(parents=True, exist_ok=True)
+
+    agents_path = codex_dir / "AGENTS.md"
+    if not agents_path.exists() or not agents_path.read_text(encoding="utf-8").strip():
+        agents_path.write_text(
+            f"""## Workspace Startup Mandate
+
+- Der aktuelle AI-Workspace befindet sich unter `{target}`.
+- Zu Beginn jeder neuen Codex-Session muss vor der Bearbeitung inhaltlicher Nutzeranfragen die Start-Prozedur ausgeführt werden.
+- Führe die Start-Prozedur als physische Hydrierung aus: Lies zuerst `{target / "AGENTS.md"}` mit Dateizugriff, nicht nur aus Erinnerung.
+- Danach befolge die dort definierte Start-Prozedur als alleinige Startup-Prozedur.
+- Verifiziere die Hydrierung mit einer kurzen Status-Zusammenfassung: `System-Kerne geladen.`
+""",
+            encoding="utf-8",
+        )
+        log(f"Codex AGENTS.md fuer Workspace eingerichtet: {agents_path}")
+    else:
+        log("WARNUNG: Codex AGENTS.md existiert bereits und wird nicht ueberschrieben.")
+
+    config_toml = codex_dir / "config.toml"
+    current = config_toml.read_text(encoding="utf-8") if config_toml.exists() else ""
+    project_key = str(target).lower()
+    python_root = str(home / ".local")
+    template = f"""approval_policy = "never"
+default_permissions = "workspace-python"
+model_reasoning_effort = "low"
+plan_mode_reasoning_effort = "low"
+
+[permissions.workspace-python]
+description = "Workspace mit Shell und Python"
+extends = ":workspace"
+
+[permissions.workspace-python.filesystem]
+'{python_root}' = "write"
+
+[permissions.workspace-python.network]
+enabled = true
+
+[projects.'{project_key}']
+trust_level = "trusted"
+"""
+    section_header = f"[projects.'{project_key}']"
+    if section_header in current:
+        updated = current
+    else:
+        updated = (current.rstrip() + "\n\n" + template).lstrip()
+    if updated != current:
+        config_toml.write_text(updated, encoding="utf-8")
+        log(f"Codex config.toml aktualisiert: {config_toml}")
+    else:
+        log("Codex config.toml ist bereits aktuell.")
+
+    state_path = codex_dir / ".codex-global-state.json"
+    state = read_json(state_path)
+    for key in ["electron-saved-workspace-roots", "project-order", "active-workspace-roots"]:
+        state.setdefault(key, [])
+        if not isinstance(state[key], list):
+            state[key] = []
+    workspace = str(target)
+    if workspace not in state["electron-saved-workspace-roots"]:
+        state["electron-saved-workspace-roots"].append(workspace)
+    state["project-order"] = move_to_front(state["project-order"], workspace)
+    state["active-workspace-roots"] = [workspace]
+    write_json(state_path, state)
+    log(f"Codex globaler UI-State fuer Workspace eingerichtet: {state_path}")
+
+def configure_antigravity_files():
+    gemini_dir = home / ".gemini"
+    gemini_dir.mkdir(parents=True, exist_ok=True)
+    gemini_md = gemini_dir / "GEMINI.md"
+    if not gemini_md.exists() or not gemini_md.read_text(encoding="utf-8").strip():
+        gemini_md.write_text(
+            f"""## Antigravity Workspace Startup Mandate
+
+- Der aktuelle AI-Workspace befindet sich unter `{target}`.
+- Zu Beginn jeder neuen Antigravity-Session muss vor der Bearbeitung inhaltlicher Nutzeranfragen die Start-Prozedur ausgeführt werden.
+- Führe die Start-Prozedur als physische Hydrierung aus: Lies zuerst `{target / "AGENTS.md"}` mit Dateizugriff, nicht nur aus Erinnerung.
+- Danach befolge die dort definierte Start-Prozedur als alleinige Startup-Prozedur.
+- Verifiziere die Hydrierung mit einer kurzen Status-Zusammenfassung: `System-Kerne geladen.`
+""",
+            encoding="utf-8",
+        )
+        log(f"Antigravity GEMINI.md fuer Workspace eingerichtet: {gemini_md}")
+    else:
+        log("WARNUNG: Antigravity GEMINI.md existiert bereits und wird nicht ueberschrieben.")
+
+    config_dir = gemini_dir / "config"
+    projects_dir = config_dir / "projects"
+    projects_dir.mkdir(parents=True, exist_ok=True)
+    folder_uri = workspace_file_uri(target)
+    project_guid = None
+    for project_file in projects_dir.glob("*.json"):
+        try:
+            data = json.loads(project_file.read_text(encoding="utf-8"))
+            resources = data.get("projectResources", {}).get("resources", [])
+            if any(item.get("folderUri") == folder_uri for item in resources if isinstance(item, dict)):
+                project_guid = data.get("id") or project_file.stem
+                break
+        except Exception:
+            continue
+    if not project_guid:
+        project_guid = str(uuid.uuid4())
+        project_file = projects_dir / f"{project_guid}.json"
+        write_json(project_file, {
+            "id": project_guid,
+            "name": target.name,
+            "projectResources": {"resources": [{"folderUri": folder_uri}]},
+            "settings": {
+                "fileAccessPolicy": "AGENT_SETTING_POLICY_ASK",
+                "internetPolicy": "AGENT_SETTING_POLICY_ALLOW",
+                "autoExecutionPolicy": "CASCADE_COMMANDS_AUTO_EXECUTION_EAGER",
+                "artifactReviewMode": "ARTIFACT_REVIEW_MODE_TURBO",
+            },
+        })
+        log(f"Antigravity Projekt-Konfiguration erstellt: {project_file}")
+    else:
+        project_file = projects_dir / f"{project_guid}.json"
+        log("Antigravity Projekt-Ressource ist bereits in .gemini registriert.")
+
+    config_json = config_dir / "config.json"
+    config = read_json(config_json)
+    merge_json(config, {
+        "userSettings": {
+            "activeProjectId": project_guid,
+            "agentModel": "MODEL_PLACEHOLDER_M330",
+            "verboseAgentChat": False,
+        },
+        "globalPermissionGrants": {
+            "allow": [f"read_file({project_file})"],
+        },
+    })
+    write_json(config_json, config)
+    log("Antigravity config.json erfolgreich aktualisiert.")
+
+    antigravity_dir = home / "Library" / "Application Support" / "Antigravity"
+    app_storage = read_json(antigravity_dir / "app_storage.json")
+    merge_json(app_storage, {
+        "ide-install-wizard-shown": True,
+        "didAskForNotificationPermission": True,
+        "activeProjectId": project_guid,
+    })
+    write_json(antigravity_dir / "app_storage.json", app_storage)
+    log(f"Antigravity app_storage.json erfolgreich aktualisiert: {antigravity_dir / 'app_storage.json'}")
+
+    settings_path = antigravity_dir / "User" / "settings.json"
+    settings = read_json(settings_path)
+    settings["window.zoomLevel"] = 1.2
+    write_json(settings_path, settings)
+    log(f"Antigravity settings.json erfolgreich aktualisiert: {settings_path}")
+
+if configure_codex:
+    configure_codex_files()
+if configure_antigravity:
+    configure_antigravity_files()
+PY
 }
 
 while [[ $# -gt 0 ]]; do
@@ -336,7 +607,7 @@ done
 [[ -n "$AGENT_NAME" ]] || AGENT_NAME="Gemmi"
 
 if [[ -z "$TEMPLATE_ROOT" ]]; then
-  if [[ -f "$PROJECT_ROOT/AGENTS.md" ]]; then
+  if [[ -f "$PROJECT_ROOT/AGENTS.md" || -f "$PROJECT_ROOT/Agents.md" ]]; then
     TEMPLATE_ROOT="$PROJECT_ROOT"
   else
     TEMPLATE_ROOT="$SCRIPT_DIR/template"
@@ -494,6 +765,10 @@ else
       ANTIGRAVITY_DMG_URL="$(default_antigravity_url)"
     fi
     install_dmg_app "$ANTIGRAVITY_DMG_URL" "Antigravity" "Google Antigravity Haupt-App"
+  fi
+  if [[ "$INSTALL_CODEX_CLI" -eq 1 || "$INSTALL_CODEX_APP" -eq 1 || "$INSTALL_ANTIGRAVITY" -eq 1 ]]; then
+    log "Richte globale Agenten-App-Konfigurationen ein."
+    configure_agent_apps "$(( INSTALL_CODEX_CLI || INSTALL_CODEX_APP ))" "$INSTALL_ANTIGRAVITY"
   fi
   if [[ "$INSTALL_OBSIDIAN$INSTALL_CODEX_CLI$INSTALL_CODEX_APP$INSTALL_ANTIGRAVITY" == "0000" ]]; then
     log "Keine App-Installationsoption gewaehlt."
