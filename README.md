@@ -27,6 +27,43 @@ cd Installer_Mac
   --no-app-installs
 ```
 
+## Optionale App-Installationen
+
+Der Installer unterscheidet bewusst zwischen Antigravity Haupt-App und Antigravity IDE:
+
+- `--install-antigravity` installiert/prueft `/Applications/Antigravity.app`
+- `--install-antigravity-ide` installiert/prueft `/Applications/Antigravity IDE.app`
+
+Beispiele:
+
+```bash
+./install.sh \
+  --target "$HOME/SuperGemmi_Workspace" \
+  --user "Stefan" \
+  --agent "Gemmi" \
+  --install-obsidian \
+  --install-codex-cli
+```
+
+DMG-basierte Desktop-Apps benoetigen explizite URLs:
+
+```bash
+./install.sh \
+  --target "$HOME/SuperGemmi_Workspace" \
+  --user "Stefan" \
+  --agent "Gemmi" \
+  --install-antigravity \
+  --antigravity-dmg-url "https://example.invalid/Antigravity.dmg"
+```
+
+Verfuegbare Installationsoptionen:
+
+- `--install-obsidian`: installiert Obsidian via Homebrew Cask.
+- `--install-codex-cli`: installiert Codex CLI non-interaktiv.
+- `--install-codex-app --codex-app-dmg-url URL`: installiert die Codex Desktop-App aus einer DMG.
+- `--install-antigravity --antigravity-dmg-url URL`: installiert Google Antigravity Haupt-App aus einer DMG.
+- `--install-antigravity-ide --antigravity-ide-dmg-url URL`: installiert Google Antigravity IDE aus einer DMG.
+
 ## Template-Auswahl
 
 Ohne `--template-root` nutzt der Installer:
@@ -40,4 +77,3 @@ Fuer ein oeffentliches Test-Repo ist `template/` bewusst minimal gehalten.
 
 Das Verzeichnis enthaelt eine eigene Workflow-Datei unter `.github/workflows/macos-smoke.yml`.
 Wenn `Installer_Mac` als eigenes Repo veroeffentlicht wird, laeuft der Smoke-Test direkt auf macOS.
-

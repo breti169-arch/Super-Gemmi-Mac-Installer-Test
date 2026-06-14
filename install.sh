@@ -9,6 +9,14 @@ USER_NAME=""
 AGENT_NAME="Gemmi"
 TEMPLATE_ROOT=""
 NO_APP_INSTALLS=0
+INSTALL_OBSIDIAN=0
+INSTALL_CODEX_CLI=0
+INSTALL_CODEX_APP=0
+INSTALL_ANTIGRAVITY=0
+INSTALL_ANTIGRAVITY_IDE=0
+CODEX_APP_DMG_URL=""
+ANTIGRAVITY_DMG_URL=""
+ANTIGRAVITY_IDE_DMG_URL=""
 
 log() {
   printf '[Super-Gemmi macOS Installer] %s\n' "$1"
@@ -22,16 +30,118 @@ fail() {
 usage() {
   cat <<'EOF'
 Usage:
-  ./install.sh --target PATH --user NAME [--agent NAME] [--template-root PATH] [--no-app-installs]
+  ./install.sh --target PATH --user NAME [--agent NAME] [options]
 
 Options:
-  --target PATH        Zielordner fuer den neuen Workspace.
-  --user NAME          Nutzername fuer Platzhalter und User.md.
-  --agent NAME         Agentenname. Default: Gemmi.
-  --template-root PATH Quelle der Workspace-Vorlage.
-  --no-app-installs    Keine externen Apps installieren. Fuer CI-Smoke-Tests empfohlen.
-  --help              Hilfe anzeigen.
+  --target PATH                    Zielordner fuer den neuen Workspace.
+  --user NAME                      Nutzername fuer Platzhalter und User.md.
+  --agent NAME                     Agentenname. Default: Gemmi.
+  --template-root PATH             Quelle der Workspace-Vorlage.
+  --no-app-installs                Keine externen Apps installieren. Fuer CI-Smoke-Tests empfohlen.
+  --install-obsidian               Obsidian via Homebrew Cask installieren.
+  --install-codex-cli              Codex CLI non-interaktiv installieren.
+  --install-codex-app              Codex Desktop-App aus einer DMG installieren.
+  --codex-app-dmg-url URL          DMG-URL fuer die Codex Desktop-App.
+  --install-antigravity            Google Antigravity Haupt-App installieren, nicht die IDE.
+  --antigravity-dmg-url URL        DMG-URL fuer Google Antigravity.
+  --install-antigravity-ide        Google Antigravity IDE installieren.
+  --antigravity-ide-dmg-url URL    DMG-URL fuer Google Antigravity IDE.
+  --help                           Hilfe anzeigen.
 EOF
+}
+
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+require_macos() {
+  if [[ "$(uname -s)" != "Darwin" ]]; then
+    fail "$1 kann nur auf macOS ausgefuehrt werden."
+  fi
+}
+
+require_homebrew() {
+  require_macos "$1"
+  if ! command_exists brew; then
+    fail "Homebrew fehlt. Bitte Homebrew installieren oder App-Installation deaktivieren."
+  fi
+}
+
+install_homebrew_cask() {
+  local cask="$1"
+  local app_path="$2"
+  local label="$3"
+
+  if [[ -d "$app_path" ]]; then
+    log "$label ist bereits installiert: $app_path"
+    return
+  fi
+
+  require_homebrew "$label"
+  if brew list --cask "$cask" >/dev/null 2>&1; then
+    log "$label ist bereits als Homebrew Cask installiert."
+    return
+  fi
+
+  log "Installiere $label via Homebrew Cask: $cask"
+  brew install --cask "$cask"
+}
+
+install_dmg_app() {
+  local url="$1"
+  local app_name="$2"
+  local label="$3"
+  local app_path="/Applications/$app_name.app"
+
+  require_macos "$label"
+
+  if [[ -d "$app_path" ]]; then
+    log "$label ist bereits installiert: $app_path"
+    return
+  fi
+
+  [[ -n "$url" ]] || fail "$label benoetigt eine DMG-URL."
+  command_exists curl || fail "curl fehlt."
+  command_exists hdiutil || fail "hdiutil fehlt."
+
+  local temp_dir
+  temp_dir="$(mktemp -d)"
+  local dmg_path="$temp_dir/app.dmg"
+  local mount_point="$temp_dir/mount"
+  mkdir -p "$mount_point"
+
+  log "Lade $label DMG herunter."
+  curl -fL "$url" -o "$dmg_path"
+
+  log "Mounte $label DMG."
+  hdiutil attach "$dmg_path" -mountpoint "$mount_point" -nobrowse -quiet
+
+  local source_app
+  source_app="$(find "$mount_point" -maxdepth 2 -name "$app_name.app" -type d | head -n 1)"
+  if [[ -z "$source_app" ]]; then
+    hdiutil detach "$mount_point" -quiet || true
+    fail "$label App-Bundle nicht in der DMG gefunden: $app_name.app"
+  fi
+
+  log "Kopiere $label nach /Applications."
+  cp -R "$source_app" "/Applications/"
+  hdiutil detach "$mount_point" -quiet
+  rm -rf "$temp_dir"
+
+  [[ -d "$app_path" ]] || fail "$label wurde nicht erfolgreich nach /Applications kopiert."
+}
+
+install_codex_cli() {
+  require_macos "Codex CLI"
+
+  if command_exists codex; then
+    log "Codex CLI ist bereits installiert: $(command -v codex)"
+    return
+  fi
+
+  command_exists curl || fail "curl fehlt."
+  log "Installiere Codex CLI non-interaktiv."
+  curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh
 }
 
 while [[ $# -gt 0 ]]; do
@@ -55,6 +165,38 @@ while [[ $# -gt 0 ]]; do
     --no-app-installs)
       NO_APP_INSTALLS=1
       shift
+      ;;
+    --install-obsidian)
+      INSTALL_OBSIDIAN=1
+      shift
+      ;;
+    --install-codex-cli)
+      INSTALL_CODEX_CLI=1
+      shift
+      ;;
+    --install-codex-app)
+      INSTALL_CODEX_APP=1
+      shift
+      ;;
+    --codex-app-dmg-url)
+      CODEX_APP_DMG_URL="${2:-}"
+      shift 2
+      ;;
+    --install-antigravity)
+      INSTALL_ANTIGRAVITY=1
+      shift
+      ;;
+    --antigravity-dmg-url)
+      ANTIGRAVITY_DMG_URL="${2:-}"
+      shift 2
+      ;;
+    --install-antigravity-ide)
+      INSTALL_ANTIGRAVITY_IDE=1
+      shift
+      ;;
+    --antigravity-ide-dmg-url)
+      ANTIGRAVITY_IDE_DMG_URL="${2:-}"
+      shift 2
       ;;
     --help|-h)
       usage
@@ -208,7 +350,24 @@ PY
 if [[ "$NO_APP_INSTALLS" -eq 1 ]]; then
   log "App-Installationen uebersprungen."
 else
-  log "App-Installationen sind im Scaffold noch nicht aktiv. Geplant: brew/direct downloads."
+  if [[ "$INSTALL_OBSIDIAN" -eq 1 ]]; then
+    install_homebrew_cask "obsidian" "/Applications/Obsidian.app" "Obsidian"
+  fi
+  if [[ "$INSTALL_CODEX_CLI" -eq 1 ]]; then
+    install_codex_cli
+  fi
+  if [[ "$INSTALL_CODEX_APP" -eq 1 ]]; then
+    install_dmg_app "$CODEX_APP_DMG_URL" "Codex" "Codex Desktop-App"
+  fi
+  if [[ "$INSTALL_ANTIGRAVITY" -eq 1 ]]; then
+    install_dmg_app "$ANTIGRAVITY_DMG_URL" "Antigravity" "Google Antigravity Haupt-App"
+  fi
+  if [[ "$INSTALL_ANTIGRAVITY_IDE" -eq 1 ]]; then
+    install_dmg_app "$ANTIGRAVITY_IDE_DMG_URL" "Antigravity IDE" "Google Antigravity IDE"
+  fi
+  if [[ "$INSTALL_OBSIDIAN$INSTALL_CODEX_CLI$INSTALL_CODEX_APP$INSTALL_ANTIGRAVITY$INSTALL_ANTIGRAVITY_IDE" == "00000" ]]; then
+    log "Keine App-Installationsoption gewaehlt."
+  fi
 fi
 
 log "Installation abgeschlossen."

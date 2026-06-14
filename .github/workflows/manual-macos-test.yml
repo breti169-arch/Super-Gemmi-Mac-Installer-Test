@@ -15,6 +15,43 @@ on:
         description: Name des temporaeren Zielordners
         required: true
         default: SuperGemmi_Workspace_Manual_Test
+      install_obsidian:
+        description: Obsidian via Homebrew Cask installieren
+        required: true
+        type: boolean
+        default: false
+      install_codex_cli:
+        description: Codex CLI non-interaktiv installieren
+        required: true
+        type: boolean
+        default: false
+      install_codex_app:
+        description: Codex Desktop-App aus DMG installieren
+        required: true
+        type: boolean
+        default: false
+      codex_app_dmg_url:
+        description: DMG-URL fuer Codex Desktop-App
+        required: false
+        default: ''
+      install_antigravity:
+        description: Google Antigravity Haupt-App aus DMG installieren
+        required: true
+        type: boolean
+        default: false
+      antigravity_dmg_url:
+        description: DMG-URL fuer Google Antigravity Haupt-App
+        required: false
+        default: ''
+      install_antigravity_ide:
+        description: Google Antigravity IDE aus DMG installieren
+        required: true
+        type: boolean
+        default: false
+      antigravity_ide_dmg_url:
+        description: DMG-URL fuer Google Antigravity IDE
+        required: false
+        default: ''
 
 jobs:
   manual-test:
@@ -35,11 +72,32 @@ jobs:
         run: |
           chmod +x ./install.sh ./package.sh
           TARGET="$RUNNER_TEMP/${{ inputs.target_name }}"
-          ./install.sh \
+          ARGS=(
             --target "$TARGET" \
             --user "${{ inputs.user_name }}" \
-            --agent "${{ inputs.agent_name }}" \
-            --no-app-installs
+            --agent "${{ inputs.agent_name }}"
+          )
+
+          if [[ "${{ inputs.install_obsidian }}" == "true" ]]; then
+            ARGS+=(--install-obsidian)
+          fi
+          if [[ "${{ inputs.install_codex_cli }}" == "true" ]]; then
+            ARGS+=(--install-codex-cli)
+          fi
+          if [[ "${{ inputs.install_codex_app }}" == "true" ]]; then
+            ARGS+=(--install-codex-app --codex-app-dmg-url "${{ inputs.codex_app_dmg_url }}")
+          fi
+          if [[ "${{ inputs.install_antigravity }}" == "true" ]]; then
+            ARGS+=(--install-antigravity --antigravity-dmg-url "${{ inputs.antigravity_dmg_url }}")
+          fi
+          if [[ "${{ inputs.install_antigravity_ide }}" == "true" ]]; then
+            ARGS+=(--install-antigravity-ide --antigravity-ide-dmg-url "${{ inputs.antigravity_ide_dmg_url }}")
+          fi
+          if [[ "${{ inputs.install_obsidian }}${{ inputs.install_codex_cli }}${{ inputs.install_codex_app }}${{ inputs.install_antigravity }}${{ inputs.install_antigravity_ide }}" == "falsefalsefalsefalsefalse" ]]; then
+            ARGS+=(--no-app-installs)
+          fi
+
+          ./install.sh "${ARGS[@]}"
 
           echo "SUPER_GEMMI_TARGET=$TARGET" >> "$GITHUB_ENV"
 
@@ -53,6 +111,21 @@ jobs:
           test -d "$SUPER_GEMMI_TARGET/Memory"
           ! grep -R "{WORKSPACE}\|{USER}\|{AGENT}" "$SUPER_GEMMI_TARGET"
           test -f "$HOME/Library/Application Support/obsidian/obsidian.json"
+          if [[ "${{ inputs.install_obsidian }}" == "true" ]]; then
+            test -d "/Applications/Obsidian.app"
+          fi
+          if [[ "${{ inputs.install_codex_cli }}" == "true" ]]; then
+            test -x "$HOME/.local/bin/codex" || command -v codex
+          fi
+          if [[ "${{ inputs.install_codex_app }}" == "true" ]]; then
+            test -d "/Applications/Codex.app"
+          fi
+          if [[ "${{ inputs.install_antigravity }}" == "true" ]]; then
+            test -d "/Applications/Antigravity.app"
+          fi
+          if [[ "${{ inputs.install_antigravity_ide }}" == "true" ]]; then
+            test -d "/Applications/Antigravity IDE.app"
+          fi
 
       - name: Build zip package
         run: |
@@ -71,4 +144,3 @@ jobs:
           path: |
             dist/Super-Gemmi-macOS-Installer.zip
             manual-test-result
-
