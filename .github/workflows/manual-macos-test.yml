@@ -43,15 +43,6 @@ on:
         description: DMG-URL fuer Google Antigravity Haupt-App
         required: false
         default: ''
-      install_antigravity_ide:
-        description: Google Antigravity IDE aus DMG installieren
-        required: true
-        type: boolean
-        default: false
-      antigravity_ide_dmg_url:
-        description: DMG-URL fuer Google Antigravity IDE
-        required: false
-        default: ''
 
 jobs:
   manual-test:
@@ -90,10 +81,7 @@ jobs:
           if [[ "${{ inputs.install_antigravity }}" == "true" ]]; then
             ARGS+=(--install-antigravity --antigravity-dmg-url "${{ inputs.antigravity_dmg_url }}")
           fi
-          if [[ "${{ inputs.install_antigravity_ide }}" == "true" ]]; then
-            ARGS+=(--install-antigravity-ide --antigravity-ide-dmg-url "${{ inputs.antigravity_ide_dmg_url }}")
-          fi
-          if [[ "${{ inputs.install_obsidian }}${{ inputs.install_codex_cli }}${{ inputs.install_codex_app }}${{ inputs.install_antigravity }}${{ inputs.install_antigravity_ide }}" == "falsefalsefalsefalsefalse" ]]; then
+          if [[ "${{ inputs.install_obsidian }}${{ inputs.install_codex_cli }}${{ inputs.install_codex_app }}${{ inputs.install_antigravity }}" == "falsefalsefalsefalse" ]]; then
             ARGS+=(--no-app-installs)
           fi
 
@@ -122,9 +110,6 @@ jobs:
           fi
           if [[ "${{ inputs.install_antigravity }}" == "true" ]]; then
             test -d "/Applications/Antigravity.app"
-          fi
-          if [[ "${{ inputs.install_antigravity_ide }}" == "true" ]]; then
-            test -d "/Applications/Antigravity IDE.app"
           fi
 
       - name: Build zip package

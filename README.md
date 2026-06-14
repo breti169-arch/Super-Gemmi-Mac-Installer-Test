@@ -29,10 +29,9 @@ cd Installer_Mac
 
 ## Optionale App-Installationen
 
-Der Installer unterscheidet bewusst zwischen Antigravity Haupt-App und Antigravity IDE:
-
-- `--install-antigravity` installiert/prueft `/Applications/Antigravity.app`
-- `--install-antigravity-ide` installiert/prueft `/Applications/Antigravity IDE.app`
+`--install-antigravity` installiert/prueft die Google Antigravity Haupt-App unter
+`/Applications/Antigravity.app`. Die separate Antigravity IDE ist nicht Teil dieses
+Installers.
 
 Beispiele:
 
@@ -62,7 +61,6 @@ Verfuegbare Installationsoptionen:
 - `--install-codex-cli`: installiert Codex CLI non-interaktiv.
 - `--install-codex-app --codex-app-dmg-url URL`: installiert die Codex Desktop-App aus einer DMG.
 - `--install-antigravity --antigravity-dmg-url URL`: installiert Google Antigravity Haupt-App aus einer DMG.
-- `--install-antigravity-ide --antigravity-ide-dmg-url URL`: installiert Google Antigravity IDE aus einer DMG.
 
 ## Template-Auswahl
 

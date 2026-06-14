@@ -13,10 +13,8 @@ INSTALL_OBSIDIAN=0
 INSTALL_CODEX_CLI=0
 INSTALL_CODEX_APP=0
 INSTALL_ANTIGRAVITY=0
-INSTALL_ANTIGRAVITY_IDE=0
 CODEX_APP_DMG_URL=""
 ANTIGRAVITY_DMG_URL=""
-ANTIGRAVITY_IDE_DMG_URL=""
 
 log() {
   printf '[Super-Gemmi macOS Installer] %s\n' "$1"
@@ -44,8 +42,6 @@ Options:
   --codex-app-dmg-url URL          DMG-URL fuer die Codex Desktop-App.
   --install-antigravity            Google Antigravity Haupt-App installieren, nicht die IDE.
   --antigravity-dmg-url URL        DMG-URL fuer Google Antigravity.
-  --install-antigravity-ide        Google Antigravity IDE installieren.
-  --antigravity-ide-dmg-url URL    DMG-URL fuer Google Antigravity IDE.
   --help                           Hilfe anzeigen.
 EOF
 }
@@ -188,14 +184,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --antigravity-dmg-url)
       ANTIGRAVITY_DMG_URL="${2:-}"
-      shift 2
-      ;;
-    --install-antigravity-ide)
-      INSTALL_ANTIGRAVITY_IDE=1
-      shift
-      ;;
-    --antigravity-ide-dmg-url)
-      ANTIGRAVITY_IDE_DMG_URL="${2:-}"
       shift 2
       ;;
     --help|-h)
@@ -362,10 +350,7 @@ else
   if [[ "$INSTALL_ANTIGRAVITY" -eq 1 ]]; then
     install_dmg_app "$ANTIGRAVITY_DMG_URL" "Antigravity" "Google Antigravity Haupt-App"
   fi
-  if [[ "$INSTALL_ANTIGRAVITY_IDE" -eq 1 ]]; then
-    install_dmg_app "$ANTIGRAVITY_IDE_DMG_URL" "Antigravity IDE" "Google Antigravity IDE"
-  fi
-  if [[ "$INSTALL_OBSIDIAN$INSTALL_CODEX_CLI$INSTALL_CODEX_APP$INSTALL_ANTIGRAVITY$INSTALL_ANTIGRAVITY_IDE" == "00000" ]]; then
+  if [[ "$INSTALL_OBSIDIAN$INSTALL_CODEX_CLI$INSTALL_CODEX_APP$INSTALL_ANTIGRAVITY" == "0000" ]]; then
     log "Keine App-Installationsoption gewaehlt."
   fi
 fi
