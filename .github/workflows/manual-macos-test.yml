@@ -1,0 +1,74 @@
+name: Manual macOS Installer Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      user_name:
+        description: Nutzername fuer den Test-Workspace
+        required: true
+        default: Stefan
+      agent_name:
+        description: Agentenname fuer den Test-Workspace
+        required: true
+        default: Gemmi
+      target_name:
+        description: Name des temporaeren Zielordners
+        required: true
+        default: SuperGemmi_Workspace_Manual_Test
+
+jobs:
+  manual-test:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show macOS environment
+        run: |
+          sw_vers
+          uname -a
+          whoami
+          echo "HOME=$HOME"
+          python3 --version
+
+      - name: Run manual installer test
+        run: |
+          chmod +x ./install.sh ./package.sh
+          TARGET="$RUNNER_TEMP/${{ inputs.target_name }}"
+          ./install.sh \
+            --target "$TARGET" \
+            --user "${{ inputs.user_name }}" \
+            --agent "${{ inputs.agent_name }}" \
+            --no-app-installs
+
+          echo "SUPER_GEMMI_TARGET=$TARGET" >> "$GITHUB_ENV"
+
+      - name: Verify installed workspace
+        run: |
+          test -d "$SUPER_GEMMI_TARGET"
+          test -f "$SUPER_GEMMI_TARGET/Agents.md"
+          test -f "$SUPER_GEMMI_TARGET/User.md"
+          test -f "$SUPER_GEMMI_TARGET/Identity.md"
+          test -d "$SUPER_GEMMI_TARGET/Wiki"
+          test -d "$SUPER_GEMMI_TARGET/Memory"
+          ! grep -R "{WORKSPACE}\|{USER}\|{AGENT}" "$SUPER_GEMMI_TARGET"
+          test -f "$HOME/Library/Application Support/obsidian/obsidian.json"
+
+      - name: Build zip package
+        run: |
+          ./package.sh
+
+      - name: Collect installed workspace snapshot
+        run: |
+          mkdir -p manual-test-result
+          cp -R "$SUPER_GEMMI_TARGET" manual-test-result/workspace
+          cp "$HOME/Library/Application Support/obsidian/obsidian.json" manual-test-result/obsidian.json
+
+      - name: Upload manual test result
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-macos-installer-test-result
+          path: |
+            dist/Super-Gemmi-macOS-Installer.zip
+            manual-test-result
+
