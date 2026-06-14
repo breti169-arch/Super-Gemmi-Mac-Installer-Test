@@ -41,8 +41,7 @@ Beispiele:
   --user "Stefan" \
   --agent "Gemmi" \
   --install-obsidian \
-  --install-codex-cli \
-  --install-codex-app \
+  --install-codex \
   --install-antigravity
 ```
 
@@ -61,6 +60,7 @@ fuer die aktuelle Architektur. Bei Bedarf koennen URLs ueberschrieben werden:
 Verfuegbare Installationsoptionen:
 
 - `--install-obsidian`: installiert Obsidian via Homebrew Cask.
+- `--install-codex`: installiert Codex CLI und Codex Desktop-App.
 - `--install-codex-cli`: installiert Codex CLI via npm in `~/.local`.
 - `--install-codex-app`: installiert die Codex Desktop-App aus der offiziellen DMG.
 - `--codex-app-dmg-url URL`: ueberschreibt die Codex-App-DMG-URL.

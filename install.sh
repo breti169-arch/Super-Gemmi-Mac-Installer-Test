@@ -41,6 +41,7 @@ Options:
   --template-root PATH             Quelle der Workspace-Vorlage.
   --no-app-installs                Keine externen Apps installieren. Fuer CI-Smoke-Tests empfohlen.
   --install-obsidian               Obsidian via Homebrew Cask installieren.
+  --install-codex                  Codex CLI und Codex Desktop-App installieren.
   --install-codex-cli              Codex CLI via npm in ~/.local installieren.
   --install-codex-app              Codex Desktop-App installieren.
   --codex-app-dmg-url URL          Optionale DMG-URL fuer die Codex Desktop-App.
@@ -221,6 +222,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --install-obsidian)
       INSTALL_OBSIDIAN=1
+      shift
+      ;;
+    --install-codex)
+      INSTALL_CODEX_CLI=1
+      INSTALL_CODEX_APP=1
       shift
       ;;
     --install-codex-cli)
