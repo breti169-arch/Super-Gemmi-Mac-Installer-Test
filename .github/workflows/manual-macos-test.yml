@@ -31,7 +31,7 @@ on:
         type: boolean
         default: false
       codex_app_dmg_url:
-        description: DMG-URL fuer Codex Desktop-App
+        description: Optionale DMG-URL fuer Codex Desktop-App; leer nutzt offiziellen Default
         required: false
         default: ''
       install_antigravity:
@@ -40,7 +40,7 @@ on:
         type: boolean
         default: false
       antigravity_dmg_url:
-        description: DMG-URL fuer Google Antigravity Haupt-App
+        description: Optionale DMG-URL fuer Google Antigravity Haupt-App; leer nutzt offiziellen Default
         required: false
         default: ''
 
@@ -104,6 +104,7 @@ jobs:
           fi
           if [[ "${{ inputs.install_codex_cli }}" == "true" ]]; then
             test -x "$HOME/.local/bin/codex" || command -v codex
+            "$HOME/.local/bin/codex" --version || codex --version
           fi
           if [[ "${{ inputs.install_codex_app }}" == "true" ]]; then
             test -d "/Applications/Codex.app"

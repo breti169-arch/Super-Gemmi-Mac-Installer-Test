@@ -15,6 +15,10 @@ INSTALL_CODEX_APP=0
 INSTALL_ANTIGRAVITY=0
 CODEX_APP_DMG_URL=""
 ANTIGRAVITY_DMG_URL=""
+CODEX_APP_APPLE_SILICON_URL="https://persistent.oaistatic.com/codex-app-prod/Codex.dmg"
+CODEX_APP_INTEL_URL="https://persistent.oaistatic.com/codex-app-prod/Codex-latest-x64.dmg"
+ANTIGRAVITY_APPLE_SILICON_URL="https://storage.googleapis.com/antigravity-public/antigravity-hub/2.1.4-6481382726303744/darwin-arm/Antigravity.dmg"
+ANTIGRAVITY_INTEL_URL="https://storage.googleapis.com/antigravity-public/antigravity-hub/2.1.4-6481382726303744/darwin-x64/Antigravity.dmg"
 
 log() {
   printf '[Super-Gemmi macOS Installer] %s\n' "$1"
@@ -37,11 +41,11 @@ Options:
   --template-root PATH             Quelle der Workspace-Vorlage.
   --no-app-installs                Keine externen Apps installieren. Fuer CI-Smoke-Tests empfohlen.
   --install-obsidian               Obsidian via Homebrew Cask installieren.
-  --install-codex-cli              Codex CLI non-interaktiv installieren.
-  --install-codex-app              Codex Desktop-App aus einer DMG installieren.
-  --codex-app-dmg-url URL          DMG-URL fuer die Codex Desktop-App.
-  --install-antigravity            Google Antigravity Haupt-App installieren, nicht die IDE.
-  --antigravity-dmg-url URL        DMG-URL fuer Google Antigravity.
+  --install-codex-cli              Codex CLI via npm in ~/.local installieren.
+  --install-codex-app              Codex Desktop-App installieren.
+  --codex-app-dmg-url URL          Optionale DMG-URL fuer die Codex Desktop-App.
+  --install-antigravity            Google Antigravity Haupt-App installieren.
+  --antigravity-dmg-url URL        Optionale DMG-URL fuer Google Antigravity.
   --help                           Hilfe anzeigen.
 EOF
 }
@@ -60,6 +64,45 @@ require_homebrew() {
   require_macos "$1"
   if ! command_exists brew; then
     fail "Homebrew fehlt. Bitte Homebrew installieren oder App-Installation deaktivieren."
+  fi
+}
+
+detect_arch_suffix() {
+  case "$(uname -m)" in
+    arm64)
+      printf 'arm64'
+      ;;
+    x86_64)
+      printf 'x64'
+      ;;
+    *)
+      fail "Nicht unterstuetzte macOS-Architektur: $(uname -m)"
+      ;;
+  esac
+}
+
+default_codex_app_url() {
+  case "$(detect_arch_suffix)" in
+    arm64) printf '%s' "$CODEX_APP_APPLE_SILICON_URL" ;;
+    x64) printf '%s' "$CODEX_APP_INTEL_URL" ;;
+  esac
+}
+
+default_antigravity_url() {
+  case "$(detect_arch_suffix)" in
+    arm64) printf '%s' "$ANTIGRAVITY_APPLE_SILICON_URL" ;;
+    x64) printf '%s' "$ANTIGRAVITY_INTEL_URL" ;;
+  esac
+}
+
+ensure_user_bin_on_path() {
+  local profile="$HOME/.zprofile"
+  local path_line='export PATH="$HOME/.local/bin:$PATH"'
+  mkdir -p "$HOME/.local/bin"
+  export PATH="$HOME/.local/bin:$PATH"
+  if [[ ! -f "$profile" ]] || ! grep -Fq "$path_line" "$profile"; then
+    printf '\n%s\n' "$path_line" >> "$profile"
+    log "PATH-Erweiterung in $profile eingetragen."
   fi
 }
 
@@ -120,11 +163,17 @@ install_dmg_app() {
   fi
 
   log "Kopiere $label nach /Applications."
-  cp -R "$source_app" "/Applications/"
+  rm -rf "$app_path"
+  if [[ -w "/Applications" ]]; then
+    cp -R "$source_app" "/Applications/"
+  else
+    sudo cp -R "$source_app" "/Applications/"
+  fi
   hdiutil detach "$mount_point" -quiet
   rm -rf "$temp_dir"
 
   [[ -d "$app_path" ]] || fail "$label wurde nicht erfolgreich nach /Applications kopiert."
+  log "$label installiert: $app_path"
 }
 
 install_codex_cli() {
@@ -135,9 +184,17 @@ install_codex_cli() {
     return
   fi
 
-  command_exists curl || fail "curl fehlt."
-  log "Installiere Codex CLI non-interaktiv."
-  curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh
+  if ! command_exists npm; then
+    require_homebrew "Node.js/npm fuer Codex CLI"
+    log "npm fehlt. Installiere Node.js via Homebrew."
+    brew install node
+  fi
+
+  ensure_user_bin_on_path
+  log "Installiere Codex CLI via npm: @openai/codex"
+  NPM_CONFIG_PREFIX="$HOME/.local" npm install -g @openai/codex
+  command_exists codex || fail "Codex CLI wurde installiert, ist aber nicht im PATH."
+  codex --version
 }
 
 while [[ $# -gt 0 ]]; do
@@ -345,9 +402,15 @@ else
     install_codex_cli
   fi
   if [[ "$INSTALL_CODEX_APP" -eq 1 ]]; then
+    if [[ -z "$CODEX_APP_DMG_URL" ]]; then
+      CODEX_APP_DMG_URL="$(default_codex_app_url)"
+    fi
     install_dmg_app "$CODEX_APP_DMG_URL" "Codex" "Codex Desktop-App"
   fi
   if [[ "$INSTALL_ANTIGRAVITY" -eq 1 ]]; then
+    if [[ -z "$ANTIGRAVITY_DMG_URL" ]]; then
+      ANTIGRAVITY_DMG_URL="$(default_antigravity_url)"
+    fi
     install_dmg_app "$ANTIGRAVITY_DMG_URL" "Antigravity" "Google Antigravity Haupt-App"
   fi
   if [[ "$INSTALL_OBSIDIAN$INSTALL_CODEX_CLI$INSTALL_CODEX_APP$INSTALL_ANTIGRAVITY" == "0000" ]]; then

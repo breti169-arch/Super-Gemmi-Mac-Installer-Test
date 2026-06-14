@@ -41,10 +41,13 @@ Beispiele:
   --user "Stefan" \
   --agent "Gemmi" \
   --install-obsidian \
-  --install-codex-cli
+  --install-codex-cli \
+  --install-codex-app \
+  --install-antigravity
 ```
 
-DMG-basierte Desktop-Apps benoetigen explizite URLs:
+DMG-basierte Desktop-Apps nutzen standardmaessig die offiziellen Download-URLs
+fuer die aktuelle Architektur. Bei Bedarf koennen URLs ueberschrieben werden:
 
 ```bash
 ./install.sh \
@@ -58,9 +61,11 @@ DMG-basierte Desktop-Apps benoetigen explizite URLs:
 Verfuegbare Installationsoptionen:
 
 - `--install-obsidian`: installiert Obsidian via Homebrew Cask.
-- `--install-codex-cli`: installiert Codex CLI non-interaktiv.
-- `--install-codex-app --codex-app-dmg-url URL`: installiert die Codex Desktop-App aus einer DMG.
-- `--install-antigravity --antigravity-dmg-url URL`: installiert Google Antigravity Haupt-App aus einer DMG.
+- `--install-codex-cli`: installiert Codex CLI via npm in `~/.local`.
+- `--install-codex-app`: installiert die Codex Desktop-App aus der offiziellen DMG.
+- `--codex-app-dmg-url URL`: ueberschreibt die Codex-App-DMG-URL.
+- `--install-antigravity`: installiert Google Antigravity Haupt-App aus der offiziellen DMG.
+- `--antigravity-dmg-url URL`: ueberschreibt die Antigravity-DMG-URL.
 
 ## Template-Auswahl
 
