@@ -142,6 +142,31 @@ jobs:
         run: |
           ./package.sh
 
+      - name: Test pkg installer
+        run: |
+          PKG_TARGET="$RUNNER_TEMP/${{ inputs.target_name }}_PKG"
+          cat > /tmp/super-gemmi-pkg.env <<EOF
+          SUPER_GEMMI_TARGET="$PKG_TARGET"
+          SUPER_GEMMI_USER="${{ inputs.user_name }}"
+          SUPER_GEMMI_AGENT="${{ inputs.agent_name }}"
+          SUPER_GEMMI_INSTALL_OBSIDIAN="false"
+          SUPER_GEMMI_INSTALL_CODEX_CLI="false"
+          SUPER_GEMMI_INSTALL_CODEX_APP="false"
+          SUPER_GEMMI_INSTALL_ANTIGRAVITY="false"
+          EOF
+
+          sudo installer -pkg dist/Super-Gemmi-macOS.pkg -target /
+          rm -f /tmp/super-gemmi-pkg.env
+
+          test -d "$PKG_TARGET"
+          test -f "$PKG_TARGET/AGENTS.md"
+          test -f "$PKG_TARGET/Gemini.md"
+          test -f "$PKG_TARGET/soul_bundle.md"
+          grep -F "System-Kerne geladen" "$PKG_TARGET/AGENTS.md"
+          grep -F "$PKG_TARGET/AGENTS.md" "$PKG_TARGET/Gemini.md"
+          grep -F "START_FILE: Identity.md" "$PKG_TARGET/soul_bundle.md"
+          echo "SUPER_GEMMI_PKG_TARGET=$PKG_TARGET" >> "$GITHUB_ENV"
+
       - name: Collect installed workspace snapshot
         run: |
           mkdir -p manual-test-result
@@ -164,6 +189,10 @@ jobs:
             cp "$HOME/Library/Application Support/Antigravity/User/settings.json" manual-test-result/antigravity/settings.json 2>/dev/null || true
           fi
           cp -R "$SUPER_GEMMI_TARGET" manual-test-result/workspace
+          if [[ -n "${SUPER_GEMMI_PKG_TARGET:-}" && -d "$SUPER_GEMMI_PKG_TARGET" ]]; then
+            find "$SUPER_GEMMI_PKG_TARGET" -maxdepth 3 -print | sort > manual-test-result/pkg-installed-workspace-files.txt
+            cp -R "$SUPER_GEMMI_PKG_TARGET" manual-test-result/pkg-workspace
+          fi
           cp "$HOME/Library/Application Support/obsidian/obsidian.json" manual-test-result/obsidian.json
 
       - name: Upload manual test result
@@ -172,4 +201,5 @@ jobs:
           name: manual-macos-installer-test-result
           path: |
             dist/Super-Gemmi-macOS-Installer.zip
+            dist/Super-Gemmi-macOS.pkg
             manual-test-result

@@ -22,6 +22,38 @@ cd Installer_Mac
 ./test-install.sh
 ```
 
+## Paket bauen
+
+Auf macOS erzeugt der Paketbuild ein ZIP und ein unsigniertes `.pkg`:
+
+```bash
+cd Installer_Mac
+./package.sh
+```
+
+Artefakte:
+
+- `dist/Super-Gemmi-macOS-Installer.zip`
+- `dist/Super-Gemmi-macOS.pkg`
+
+Das `.pkg` installiert die Installerdateien nach
+`/usr/local/share/super-gemmi-macos-installer` und startet danach den Installer
+per `postinstall`. Ohne Zusatzkonfiguration wird ein Workspace unter
+`~/SuperGemmi_Workspace` ohne externe App-Installationen angelegt.
+
+Fuer automatisierte Tests kann vor dem Paketlauf `/tmp/super-gemmi-pkg.env`
+angelegt werden:
+
+```bash
+SUPER_GEMMI_TARGET="$HOME/SuperGemmi_Workspace"
+SUPER_GEMMI_USER="Stefan"
+SUPER_GEMMI_AGENT="Gemmi"
+SUPER_GEMMI_INSTALL_OBSIDIAN="false"
+SUPER_GEMMI_INSTALL_CODEX_CLI="false"
+SUPER_GEMMI_INSTALL_CODEX_APP="false"
+SUPER_GEMMI_INSTALL_ANTIGRAVITY="false"
+```
+
 ## Manuelle Installation
 
 ```bash

@@ -1,0 +1,87 @@
+#!/bin/bash
+set -euo pipefail
+
+PAYLOAD_DIR="/usr/local/share/super-gemmi-macos-installer"
+CONFIG_FILE="/tmp/super-gemmi-pkg.env"
+
+log() {
+  printf '[Super-Gemmi macOS PKG] %s\n' "$1"
+}
+
+console_user() {
+  local user=""
+  if command -v stat >/dev/null 2>&1; then
+    user="$(stat -f '%Su' /dev/console 2>/dev/null || true)"
+  fi
+  if [[ -z "$user" || "$user" == "root" ]]; then
+    user="${SUDO_USER:-${USER:-}}"
+  fi
+  if [[ -z "$user" || "$user" == "root" ]]; then
+    user="$(logname 2>/dev/null || true)"
+  fi
+  printf '%s' "$user"
+}
+
+INSTALL_USER="$(console_user)"
+if [[ -z "$INSTALL_USER" ]]; then
+  log "Kein interaktiver Nutzer gefunden."
+  exit 1
+fi
+
+USER_HOME="$(dscl . -read "/Users/$INSTALL_USER" NFSHomeDirectory 2>/dev/null | awk '{print $2}')"
+if [[ -z "$USER_HOME" || ! -d "$USER_HOME" ]]; then
+  USER_HOME="/Users/$INSTALL_USER"
+fi
+
+SUPER_GEMMI_TARGET="$USER_HOME/SuperGemmi_Workspace"
+SUPER_GEMMI_USER="$INSTALL_USER"
+SUPER_GEMMI_AGENT="Gemmi"
+SUPER_GEMMI_INSTALL_OBSIDIAN="false"
+SUPER_GEMMI_INSTALL_CODEX_CLI="false"
+SUPER_GEMMI_INSTALL_CODEX_APP="false"
+SUPER_GEMMI_INSTALL_ANTIGRAVITY="false"
+
+if [[ -f "$CONFIG_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$CONFIG_FILE"
+fi
+
+ARGS=(
+  --target "$SUPER_GEMMI_TARGET"
+  --user "$SUPER_GEMMI_USER"
+  --agent "$SUPER_GEMMI_AGENT"
+)
+
+if [[ "$SUPER_GEMMI_INSTALL_OBSIDIAN" == "true" ]]; then
+  ARGS+=(--install-obsidian)
+fi
+if [[ "$SUPER_GEMMI_INSTALL_CODEX_CLI" == "true" ]]; then
+  ARGS+=(--install-codex-cli)
+fi
+if [[ "$SUPER_GEMMI_INSTALL_CODEX_APP" == "true" ]]; then
+  ARGS+=(--install-codex-app)
+fi
+if [[ "$SUPER_GEMMI_INSTALL_ANTIGRAVITY" == "true" ]]; then
+  ARGS+=(--install-antigravity)
+fi
+if [[ "$SUPER_GEMMI_INSTALL_OBSIDIAN$SUPER_GEMMI_INSTALL_CODEX_CLI$SUPER_GEMMI_INSTALL_CODEX_APP$SUPER_GEMMI_INSTALL_ANTIGRAVITY" == "falsefalsefalsefalse" ]]; then
+  ARGS+=(--no-app-installs)
+fi
+
+if [[ -e "$SUPER_GEMMI_TARGET" && -n "$(find "$SUPER_GEMMI_TARGET" -mindepth 1 -maxdepth 1 2>/dev/null)" ]]; then
+  log "Zielordner existiert bereits und ist nicht leer: $SUPER_GEMMI_TARGET"
+  log "Workspace-Erstellung wird uebersprungen."
+  exit 0
+fi
+
+log "Starte Installer fuer Nutzer $INSTALL_USER: $SUPER_GEMMI_TARGET"
+mkdir -p "$SUPER_GEMMI_TARGET"
+chown "$INSTALL_USER" "$SUPER_GEMMI_TARGET" 2>/dev/null || true
+
+if command -v sudo >/dev/null 2>&1; then
+  sudo -u "$INSTALL_USER" HOME="$USER_HOME" "$PAYLOAD_DIR/install.sh" "${ARGS[@]}"
+else
+  HOME="$USER_HOME" "$PAYLOAD_DIR/install.sh" "${ARGS[@]}"
+fi
+
+log "PKG-Installation abgeschlossen."
