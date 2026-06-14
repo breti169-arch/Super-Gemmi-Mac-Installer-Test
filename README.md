@@ -78,7 +78,16 @@ Ohne `--template-root` nutzt der Installer:
 
 Fuer ein oeffentliches Test-Repo ist `template/` bewusst minimal gehalten.
 
+Hinweis fuer Windows-Arbeitsplaetze: `Agents.md` und `AGENTS.md` unterscheiden
+sich nur in der Gross-/Kleinschreibung. Auf dem ueblichen Windows-Dateisystem
+koennen diese Dateien nicht zuverlaessig nebeneinander gepflegt oder aus einem
+Artefakt entpackt angezeigt werden. Deshalb enthaelt das Template nur
+`Agents.md`; der Installer erzeugt `AGENTS.md` erst im macOS-Ziel-Workspace.
+Der GitHub-Action-Test prueft beide Dateien direkt auf macOS und legt zusaetzlich
+`manual-test-result/installed-workspace-files.txt` sowie
+`manual-test-result/mandate-checksums.txt` im Artefakt ab.
+
 ## GitHub Actions
 
-Das Verzeichnis enthaelt eine eigene Workflow-Datei unter `.github/workflows/macos-smoke.yml`.
-Wenn `Installer_Mac` als eigenes Repo veroeffentlicht wird, laeuft der Smoke-Test direkt auf macOS.
+Das Verzeichnis enthaelt eine eigene Workflow-Datei unter `.github/workflows/manual-macos-test.yml`.
+Wenn `Installer_Mac` als eigenes Repo veroeffentlicht wird, laeuft der manuelle Test direkt auf macOS.
