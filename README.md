@@ -44,11 +44,20 @@ per `postinstall`.
 Varianten:
 
 - `Super-Gemmi-macOS-Base.pkg`: legt nur den Workspace an, keine App-Downloads.
-- `Super-Gemmi-macOS-Apps.pkg`: legt den Workspace an und installiert Obsidian
-  sowie Google Antigravity.
+- `Super-Gemmi-macOS-Apps.pkg`: setzt einen vorhandenen Workspace voraus und
+  installiert nur Obsidian sowie Google Antigravity. Der Workspace wird nicht
+  neu erzeugt.
 
 Ohne Zusatzkonfiguration wird ein Workspace unter `~/SuperGemmi_Workspace`
 angelegt.
+
+Geplanter manueller Testablauf:
+
+1. `Super-Gemmi-macOS-Base.pkg` installieren. Danach existiert der Workspace.
+2. `Super-Gemmi-macOS-Apps.pkg` installieren. Danach existieren Obsidian und
+   Antigravity; Obsidian ist mit `Workspace/Wiki` verbunden und Antigravity
+   besitzt ein Projekt fuer den Workspace.
+3. Apps starten und im Workspace testen.
 
 Fuer automatisierte Tests kann vor dem Paketlauf `/tmp/super-gemmi-pkg.env`
 angelegt werden. Diese Datei ueberschreibt die Paketdefaults:

@@ -41,6 +41,8 @@ SUPER_GEMMI_INSTALL_OBSIDIAN="false"
 SUPER_GEMMI_INSTALL_CODEX_CLI="false"
 SUPER_GEMMI_INSTALL_CODEX_APP="false"
 SUPER_GEMMI_INSTALL_ANTIGRAVITY="false"
+SUPER_GEMMI_ALLOW_EXISTING_WORKSPACE="false"
+SUPER_GEMMI_REQUIRE_EXISTING_WORKSPACE="false"
 
 if [[ -f "$DEFAULTS_FILE" ]]; then
   # shellcheck disable=SC1090
@@ -58,6 +60,10 @@ ARGS=(
   --agent "$SUPER_GEMMI_AGENT"
 )
 
+if [[ "$SUPER_GEMMI_ALLOW_EXISTING_WORKSPACE" == "true" ]]; then
+  ARGS+=(--allow-existing-workspace)
+fi
+
 if [[ "$SUPER_GEMMI_INSTALL_OBSIDIAN" == "true" ]]; then
   ARGS+=(--install-obsidian)
 fi
@@ -74,7 +80,12 @@ if [[ "$SUPER_GEMMI_INSTALL_OBSIDIAN$SUPER_GEMMI_INSTALL_CODEX_CLI$SUPER_GEMMI_I
   ARGS+=(--no-app-installs)
 fi
 
-if [[ -e "$SUPER_GEMMI_TARGET" && -n "$(find "$SUPER_GEMMI_TARGET" -mindepth 1 -maxdepth 1 2>/dev/null)" ]]; then
+if [[ "$SUPER_GEMMI_REQUIRE_EXISTING_WORKSPACE" == "true" && ! -d "$SUPER_GEMMI_TARGET" ]]; then
+  log "Erwarteter Workspace fehlt: $SUPER_GEMMI_TARGET"
+  exit 1
+fi
+
+if [[ -e "$SUPER_GEMMI_TARGET" && -n "$(find "$SUPER_GEMMI_TARGET" -mindepth 1 -maxdepth 1 2>/dev/null)" && "$SUPER_GEMMI_ALLOW_EXISTING_WORKSPACE" != "true" ]]; then
   log "Zielordner existiert bereits und ist nicht leer: $SUPER_GEMMI_TARGET"
   log "Workspace-Erstellung wird uebersprungen."
   exit 0

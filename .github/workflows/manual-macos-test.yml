@@ -165,6 +165,29 @@ jobs:
           grep -F "System-Kerne geladen" "$PKG_TARGET/AGENTS.md"
           grep -F "$PKG_TARGET/AGENTS.md" "$PKG_TARGET/Gemini.md"
           grep -F "START_FILE: Identity.md" "$PKG_TARGET/soul_bundle.md"
+
+          cat > /tmp/super-gemmi-pkg.env <<EOF
+          SUPER_GEMMI_TARGET="$PKG_TARGET"
+          SUPER_GEMMI_USER="${{ inputs.user_name }}"
+          SUPER_GEMMI_AGENT="${{ inputs.agent_name }}"
+          EOF
+
+          sudo installer -pkg dist/Super-Gemmi-macOS-Apps.pkg -target /
+          rm -f /tmp/super-gemmi-pkg.env
+
+          test -d "/Applications/Obsidian.app"
+          test -d "/Applications/Antigravity.app"
+          test -f "$HOME/Library/Application Support/obsidian/obsidian.json"
+          grep -F "$PKG_TARGET/Wiki" "$HOME/Library/Application Support/obsidian/obsidian.json"
+          test -f "$HOME/.gemini/GEMINI.md"
+          test -f "$HOME/.gemini/config/config.json"
+          test -d "$HOME/.gemini/config/projects"
+          test -f "$HOME/Library/Application Support/Antigravity/app_storage.json"
+          test -f "$HOME/Library/Application Support/Antigravity/User/settings.json"
+          grep -F "$PKG_TARGET/AGENTS.md" "$HOME/.gemini/GEMINI.md"
+          grep -F "$PKG_TARGET" "$HOME/.gemini/config/projects/"*.json
+          grep -F "activeProjectId" "$HOME/.gemini/config/config.json"
+          grep -F "window.zoomLevel" "$HOME/Library/Application Support/Antigravity/User/settings.json"
           echo "SUPER_GEMMI_PKG_TARGET=$PKG_TARGET" >> "$GITHUB_ENV"
 
       - name: Collect installed workspace snapshot

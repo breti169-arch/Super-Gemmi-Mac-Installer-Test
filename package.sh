@@ -38,6 +38,8 @@ build_pkg() {
   local pkg_path="$3"
   local install_obsidian="$4"
   local install_antigravity="$5"
+  local allow_existing_workspace="$6"
+  local require_existing_workspace="$7"
 
   local pkg_root="$DIST_DIR/pkg-root-$variant"
   local pkg_payload="$pkg_root/usr/local/share/super-gemmi-macos-installer"
@@ -53,6 +55,8 @@ SUPER_GEMMI_INSTALL_OBSIDIAN="$install_obsidian"
 SUPER_GEMMI_INSTALL_CODEX_CLI="false"
 SUPER_GEMMI_INSTALL_CODEX_APP="false"
 SUPER_GEMMI_INSTALL_ANTIGRAVITY="$install_antigravity"
+SUPER_GEMMI_ALLOW_EXISTING_WORKSPACE="$allow_existing_workspace"
+SUPER_GEMMI_REQUIRE_EXISTING_WORKSPACE="$require_existing_workspace"
 EOF
   chmod +x "$pkg_payload/install.sh" "$pkg_scripts/postinstall"
 
@@ -72,11 +76,15 @@ if command -v pkgbuild >/dev/null 2>&1; then
     "de.super-gemmi.workspace-installer.base" \
     "$DIST_DIR/Super-Gemmi-macOS-Base.pkg" \
     "false" \
+    "false" \
+    "false" \
     "false"
   build_pkg \
     "apps" \
     "de.super-gemmi.workspace-installer.apps" \
     "$DIST_DIR/Super-Gemmi-macOS-Apps.pkg" \
+    "true" \
+    "true" \
     "true" \
     "true"
 else

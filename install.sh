@@ -9,6 +9,7 @@ USER_NAME=""
 AGENT_NAME="Gemmi"
 TEMPLATE_ROOT=""
 NO_APP_INSTALLS=0
+ALLOW_EXISTING_WORKSPACE=0
 INSTALL_OBSIDIAN=0
 INSTALL_CODEX_CLI=0
 INSTALL_CODEX_APP=0
@@ -40,6 +41,7 @@ Options:
   --agent NAME                     Agentenname. Default: Gemmi.
   --template-root PATH             Quelle der Workspace-Vorlage.
   --no-app-installs                Keine externen Apps installieren. Fuer CI-Smoke-Tests empfohlen.
+  --allow-existing-workspace       Vorhandenen Workspace verwenden und nur Apps/Konfiguration einrichten.
   --install-obsidian               Obsidian via Homebrew Cask installieren.
   --install-codex                  Codex CLI und Codex Desktop-App installieren.
   --install-codex-cli              Codex CLI via npm in ~/.local installieren.
@@ -563,6 +565,10 @@ while [[ $# -gt 0 ]]; do
       NO_APP_INSTALLS=1
       shift
       ;;
+    --allow-existing-workspace)
+      ALLOW_EXISTING_WORKSPACE=1
+      shift
+      ;;
     --install-obsidian)
       INSTALL_OBSIDIAN=1
       shift
@@ -618,11 +624,19 @@ fi
 
 TARGET="$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$TARGET")"
 TEMPLATE_ROOT="$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$TEMPLATE_ROOT")"
+export TARGET
 
+SKIP_WORKSPACE_SETUP=0
 if [[ -d "$TARGET" ]] && [[ -n "$(find "$TARGET" -mindepth 1 -maxdepth 1 2>/dev/null)" ]]; then
-  fail "Zielordner ist nicht leer: $TARGET"
+  if [[ "$ALLOW_EXISTING_WORKSPACE" -eq 1 ]]; then
+    SKIP_WORKSPACE_SETUP=1
+    log "Vorhandener Workspace wird verwendet: $TARGET"
+  else
+    fail "Zielordner ist nicht leer: $TARGET"
+  fi
 fi
 
+if [[ "$SKIP_WORKSPACE_SETUP" -eq 0 ]]; then
 log "Erstelle Workspace: $TARGET"
 mkdir -p "$TARGET"
 
@@ -720,6 +734,7 @@ import time
 from pathlib import Path
 
 target = Path(os.environ["TARGET"]).resolve()
+vault_path = target / "Wiki"
 config_path = Path(os.environ["OBSIDIAN_CONFIG"])
 if config_path.exists() and config_path.read_text(encoding="utf-8").strip():
     config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -728,13 +743,13 @@ else:
 
 vaults = config.setdefault("vaults", {})
 for vault in vaults.values():
-    if Path(vault.get("path", "")).expanduser().resolve() == target:
+    if Path(vault.get("path", "")).expanduser().resolve() == vault_path:
         break
 else:
-    vault_id = hashlib.sha256(str(target).upper().encode("utf-8")).hexdigest()[:16]
+    vault_id = hashlib.sha256(str(vault_path).upper().encode("utf-8")).hexdigest()[:16]
     vaults[vault_id] = {
-        "name": "SuperGemmi_Workspace",
-        "path": str(target),
+        "name": "SuperGemmi_Wiki",
+        "path": str(vault_path),
         "ts": int(time.time() * 1000),
     }
 
@@ -744,6 +759,46 @@ PY
 log "Richte Agenten-Mandate ein."
 ensure_agent_mandates
 compile_soul_bundle
+else
+  [[ -d "$TARGET/Wiki" ]] || fail "Vorhandener Workspace enthaelt keinen Wiki-Ordner: $TARGET/Wiki"
+  [[ -f "$TARGET/AGENTS.md" ]] || fail "Vorhandener Workspace enthaelt keine AGENTS.md: $TARGET/AGENTS.md"
+  [[ -f "$TARGET/Gemini.md" ]] || fail "Vorhandener Workspace enthaelt keine Gemini.md: $TARGET/Gemini.md"
+  [[ -f "$TARGET/soul_bundle.md" ]] || fail "Vorhandener Workspace enthaelt kein soul_bundle.md: $TARGET/soul_bundle.md"
+  log "Registriere Obsidian-Vault in macOS-Konfiguration."
+  OBSIDIAN_DIR="$HOME/Library/Application Support/obsidian"
+  OBSIDIAN_CONFIG="$OBSIDIAN_DIR/obsidian.json"
+  mkdir -p "$OBSIDIAN_DIR"
+  export OBSIDIAN_CONFIG
+  python3 <<'PY'
+import hashlib
+import json
+import os
+import time
+from pathlib import Path
+
+target = Path(os.environ["TARGET"]).resolve()
+vault_path = target / "Wiki"
+config_path = Path(os.environ["OBSIDIAN_CONFIG"])
+if config_path.exists() and config_path.read_text(encoding="utf-8").strip():
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+else:
+    config = {}
+
+vaults = config.setdefault("vaults", {})
+for vault in vaults.values():
+    if Path(vault.get("path", "")).expanduser().resolve() == vault_path:
+        break
+else:
+    vault_id = hashlib.sha256(str(vault_path).upper().encode("utf-8")).hexdigest()[:16]
+    vaults[vault_id] = {
+        "name": "SuperGemmi_Wiki",
+        "path": str(vault_path),
+        "ts": int(time.time() * 1000),
+    }
+
+config_path.write_text(json.dumps(config, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+PY
+fi
 
 if [[ "$NO_APP_INSTALLS" -eq 1 ]]; then
   log "App-Installationen uebersprungen."
