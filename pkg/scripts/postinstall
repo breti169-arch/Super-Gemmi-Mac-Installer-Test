@@ -4,6 +4,7 @@ set -euo pipefail
 PAYLOAD_DIR="/usr/local/share/super-gemmi-macos-installer"
 CONFIG_FILE="/tmp/super-gemmi-pkg.env"
 DEFAULTS_FILE="$PAYLOAD_DIR/pkg-defaults.env"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 log() {
   printf '[Super-Gemmi macOS PKG] %s\n' "$1"
