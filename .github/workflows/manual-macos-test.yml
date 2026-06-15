@@ -155,7 +155,7 @@ jobs:
           SUPER_GEMMI_INSTALL_ANTIGRAVITY="false"
           EOF
 
-          sudo installer -pkg dist/Super-Gemmi-macOS.pkg -target /
+          sudo installer -pkg dist/Super-Gemmi-macOS-Base.pkg -target /
           rm -f /tmp/super-gemmi-pkg.env
 
           test -d "$PKG_TARGET"
@@ -201,5 +201,6 @@ jobs:
           name: manual-macos-installer-test-result
           path: |
             dist/Super-Gemmi-macOS-Installer.zip
-            dist/Super-Gemmi-macOS.pkg
+            dist/Super-Gemmi-macOS-Base.pkg
+            dist/Super-Gemmi-macOS-Apps.pkg
             manual-test-result

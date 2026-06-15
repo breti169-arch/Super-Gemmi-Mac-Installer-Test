@@ -3,6 +3,7 @@ set -euo pipefail
 
 PAYLOAD_DIR="/usr/local/share/super-gemmi-macos-installer"
 CONFIG_FILE="/tmp/super-gemmi-pkg.env"
+DEFAULTS_FILE="$PAYLOAD_DIR/pkg-defaults.env"
 
 log() {
   printf '[Super-Gemmi macOS PKG] %s\n' "$1"
@@ -40,6 +41,11 @@ SUPER_GEMMI_INSTALL_OBSIDIAN="false"
 SUPER_GEMMI_INSTALL_CODEX_CLI="false"
 SUPER_GEMMI_INSTALL_CODEX_APP="false"
 SUPER_GEMMI_INSTALL_ANTIGRAVITY="false"
+
+if [[ -f "$DEFAULTS_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$DEFAULTS_FILE"
+fi
 
 if [[ -f "$CONFIG_FILE" ]]; then
   # shellcheck disable=SC1090

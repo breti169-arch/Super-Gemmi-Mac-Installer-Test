@@ -34,15 +34,24 @@ cd Installer_Mac
 Artefakte:
 
 - `dist/Super-Gemmi-macOS-Installer.zip`
-- `dist/Super-Gemmi-macOS.pkg`
+- `dist/Super-Gemmi-macOS-Base.pkg`
+- `dist/Super-Gemmi-macOS-Apps.pkg`
 
-Das `.pkg` installiert die Installerdateien nach
-`/usr/local/share/super-gemmi-macos-installer` und startet danach den Installer
-per `postinstall`. Ohne Zusatzkonfiguration wird ein Workspace unter
-`~/SuperGemmi_Workspace` ohne externe App-Installationen angelegt.
+Die `.pkg`-Dateien installieren die Installerdateien nach
+`/usr/local/share/super-gemmi-macos-installer` und starten danach den Installer
+per `postinstall`.
+
+Varianten:
+
+- `Super-Gemmi-macOS-Base.pkg`: legt nur den Workspace an, keine App-Downloads.
+- `Super-Gemmi-macOS-Apps.pkg`: legt den Workspace an und installiert Obsidian
+  sowie Google Antigravity.
+
+Ohne Zusatzkonfiguration wird ein Workspace unter `~/SuperGemmi_Workspace`
+angelegt.
 
 Fuer automatisierte Tests kann vor dem Paketlauf `/tmp/super-gemmi-pkg.env`
-angelegt werden:
+angelegt werden. Diese Datei ueberschreibt die Paketdefaults:
 
 ```bash
 SUPER_GEMMI_TARGET="$HOME/SuperGemmi_Workspace"

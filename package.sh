@@ -4,10 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIST_DIR="$SCRIPT_DIR/dist"
 PACKAGE_ROOT="$DIST_DIR/Super-Gemmi-macOS-Installer"
-PKG_ROOT="$DIST_DIR/pkg-root"
-PKG_PAYLOAD="$PKG_ROOT/usr/local/share/super-gemmi-macos-installer"
-PKG_SCRIPTS="$DIST_DIR/pkg-scripts"
-PKG_PATH="$DIST_DIR/Super-Gemmi-macOS.pkg"
 
 rm -rf "$DIST_DIR"
 mkdir -p "$PACKAGE_ROOT"
@@ -18,13 +14,6 @@ cp "$SCRIPT_DIR/README.md" "$PACKAGE_ROOT/README.md"
 cp -R "$SCRIPT_DIR/template" "$PACKAGE_ROOT/template"
 
 chmod +x "$PACKAGE_ROOT/install.sh" "$PACKAGE_ROOT/test-install.sh"
-
-mkdir -p "$PKG_PAYLOAD" "$PKG_SCRIPTS"
-cp "$SCRIPT_DIR/install.sh" "$PKG_PAYLOAD/install.sh"
-cp "$SCRIPT_DIR/README.md" "$PKG_PAYLOAD/README.md"
-cp -R "$SCRIPT_DIR/template" "$PKG_PAYLOAD/template"
-cp "$SCRIPT_DIR/pkg/scripts/postinstall" "$PKG_SCRIPTS/postinstall"
-chmod +x "$PKG_PAYLOAD/install.sh" "$PKG_SCRIPTS/postinstall"
 
 export DIST_DIR PACKAGE_ROOT
 python3 <<'PY'
@@ -43,15 +32,53 @@ PY
 
 echo "$DIST_DIR/Super-Gemmi-macOS-Installer.zip"
 
-if command -v pkgbuild >/dev/null 2>&1; then
+build_pkg() {
+  local variant="$1"
+  local identifier="$2"
+  local pkg_path="$3"
+  local install_obsidian="$4"
+  local install_antigravity="$5"
+
+  local pkg_root="$DIST_DIR/pkg-root-$variant"
+  local pkg_payload="$pkg_root/usr/local/share/super-gemmi-macos-installer"
+  local pkg_scripts="$DIST_DIR/pkg-scripts-$variant"
+
+  mkdir -p "$pkg_payload" "$pkg_scripts"
+  cp "$SCRIPT_DIR/install.sh" "$pkg_payload/install.sh"
+  cp "$SCRIPT_DIR/README.md" "$pkg_payload/README.md"
+  cp -R "$SCRIPT_DIR/template" "$pkg_payload/template"
+  cp "$SCRIPT_DIR/pkg/scripts/postinstall" "$pkg_scripts/postinstall"
+  cat > "$pkg_payload/pkg-defaults.env" <<EOF
+SUPER_GEMMI_INSTALL_OBSIDIAN="$install_obsidian"
+SUPER_GEMMI_INSTALL_CODEX_CLI="false"
+SUPER_GEMMI_INSTALL_CODEX_APP="false"
+SUPER_GEMMI_INSTALL_ANTIGRAVITY="$install_antigravity"
+EOF
+  chmod +x "$pkg_payload/install.sh" "$pkg_scripts/postinstall"
+
   pkgbuild \
-    --root "$PKG_ROOT" \
-    --scripts "$PKG_SCRIPTS" \
-    --identifier "de.super-gemmi.workspace-installer" \
+    --root "$pkg_root" \
+    --scripts "$pkg_scripts" \
+    --identifier "$identifier" \
     --version "0.1.0" \
     --install-location "/" \
-    "$PKG_PATH"
-  echo "$PKG_PATH"
+    "$pkg_path"
+  echo "$pkg_path"
+}
+
+if command -v pkgbuild >/dev/null 2>&1; then
+  build_pkg \
+    "base" \
+    "de.super-gemmi.workspace-installer.base" \
+    "$DIST_DIR/Super-Gemmi-macOS-Base.pkg" \
+    "false" \
+    "false"
+  build_pkg \
+    "apps" \
+    "de.super-gemmi.workspace-installer.apps" \
+    "$DIST_DIR/Super-Gemmi-macOS-Apps.pkg" \
+    "true" \
+    "true"
 else
   echo "pkgbuild nicht gefunden; .pkg wird nur auf macOS gebaut." >&2
 fi
